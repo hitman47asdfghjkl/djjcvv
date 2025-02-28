@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Enter Credit Card Information</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin-top: 50px;
+    }
+    input, button {
+      padding: 10px 20px;
+      margin: 10px;
+      font-size: 16px;
+      width: 300px;
+    }
+    .card-input {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .error {
+      color: red;
+      margin: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>丁俊杰专用盗刷信用卡网站by djj </h1>
+  <div class="card-input">
+    <!-- Card Number -->
+    <input type="text" id="card-number" placeholder="Card Number" />
+
+    <!-- Expiration Date -->
+    <input type="text" id="card-expiry" placeholder="MM/YY" />
+
+    <!-- CVV -->
+    <input type="text" id="card-cvv" placeholder="CVV" />
+
+    <!-- Error Message -->
+    <div id="card-errors" class="error"></div>
+
+    <!-- Pay Button -->
+    <button id="submit">Pay</button>
+  </div>
+
+  <script src="https://js.stripe.com/v3/"></script>
+  <script>
+    const stripe = Stripe('pk_live_51QwpBOAURz4G78h0VaiAgfmxOHtPkCUwHa4qbWZ43ye0kBZdXVPzpZbpElhdE46vApwozybVC22NCTOTEoje6rG400WXJf2zFj');  // 替换为你的 Stripe 公钥
+
+    // 获取金额
+    const urlParams = new URLSearchParams(window.location.search);
+    const amount = parseFloat(urlParams.get('amount'));
+
+    // 验证金额
+    if (isNaN(amount) || amount <= 0) {
+      alert('Invalid amount');
+      window.location.href = '/cancel';
+    }
+
+    // 处理支付
+    document.getElementById('submit').addEventListener('click', async (event) => {
+      event.preventDefault();  // 阻止表单默认提交行为
+      console.log('Pay button clicked');  // 调试信息
+
+      const cardNumber = document.getElementById('card-number').value;
+      const cardExpiry = document.getElementById('card-expiry').value;
+      const cardCvv = document.getElementById('card-cvv').value;
+
+      // 验证输入
+      if (!cardNumber || !cardExpiry || !cardCvv) {
+        document.getElementById('card-errors').textContent = 'Please fill in all fields';
+        return;
+      }
+
+      // 分割有效期
+      const [expMonth, expYear] = cardExpiry.split('/');
+
+      // 创建支付方式
+      const { paymentMethod, error } = await stripe.createPaymentMethod({
+        type: 'card',
+        card: {
+          number: cardNumber,
+          exp_month: expMonth,
+          exp_year: expYear,
+          cvc: cardCvv,
+        },
+      });
+
+      if (error) {
+        console.error('Stripe error:', error);  // 打印 Stripe 错误
+        document.getElementById('card-errors').textContent = error.message;
+      } else {
+        console.log('PaymentMethod created:', paymentMethod);  // 打印支付方法
+
+        // 发送支付信息到服务器
+        const response = await fetch('/create-stripe-charge', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            paymentMethodId: paymentMethod.id,
+            amount: amount * 100,  // 转换为美分
+          }),
+        });
+
+        const result = await response.json();
+        console.log('Server response:', result);  // 打印服务器响应
+
+        if (result.success) {
+          window.location.href = '/success';  // 跳转到成功页面
+        } else {
+          document.getElementById('card-errors').textContent = 'Payment failed: ' + (result.error || 'Unknown error');
+        }
+      }
+    });
+  </script>
+</body>
+</html>

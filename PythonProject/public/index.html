@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment Page</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin-top: 50px;
+    }
+    input, button {
+      padding: 10px 20px;
+      margin: 20px;
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Enter the Amount to Pay</h1>
+
+  <!-- Amount input -->
+  <input type="number" id="amount" placeholder="Enter amount in USD" />
+
+  <!-- Confirm Payment button -->
+  <button id="confirm-payment-button">Confirm Payment</button>
+
+  <script>
+    document.getElementById('confirm-payment-button').addEventListener('click', async () => {
+      const amount = document.getElementById('amount').value;
+
+      if (!amount || amount <= 0) {
+        alert('Please enter a valid amount');
+        return;
+      }
+
+      // Save the amount and redirect to the payment page
+      window.location.href = `/payment?amount=${amount}`;
+    });
+  </script>
+</body>
+</html>
